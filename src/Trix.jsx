@@ -1,67 +1,84 @@
-import React, { Component, PropTypes } from 'react'
+import React, { PropTypes } from 'react';
 
+// with ExtractTextPlugin (cannot do that in a npm non-root package)
+// but you can put it in the doc
+import 'trix/dist/trix.css';
+
+// They do clever stuff on window.Trix, you can't use export/import loaders as suggested here:
+// https://github.com/basecamp/trix/issues/80
+// Instead we do the dumbest thing possible with webpack, use the script loader.
+// Acceptable since the file is already minified and has no reusable dependencies.
+// npm i script-loader -S
+import 'script!trix/dist/trix.js';
+
+// There are 2 flows possible for updates:
+
+// 1. regular user flow: User types stuff -> this.editor.value + trix-change -> this.props.onChange
+// 2. forced flow (reset...): this.props.value -> this.editor.value (trix-change not triggered)
 class TrixEditor extends React.Component {
-  static propTypes = {
+
+  // 1. For the first flow we forward trix-change events to this.props.onChange
+  componentDidMount() {
+    this.editor = document.getElementById(`editor-${this._id}`);
+    this.editor.addEventListener('trix-change', this.props.onChange);
+    this.editor.addEventListener('trix-initialize', this.props.onChange);
   }
 
-  static defaultProps = {
-    onChange: () => null
+  // 2. Value is not read after initialization (See https://github.com/spiffytech/trix/commit/0e19f2cadb5cd0092fe6b16c25919f0c4ae387de)
+  // so for the second flow, we need to check that we are not at the end of the feedback loop
+  // of the firt flow and update Trix' value
+  componentWillReceiveProps(nextProps) {
+    if (nextProps.value !== this.editor.value) {
+      this.editor.value = nextProps.value;
+    }
+  }
+
+  // We don't need to update on this.props.value changes since Trix won't read it anyway.
+  shouldComponentUpdate() {
+    return false;
+  }
+
+  componentWillUnmount() {
+    this.editor.removeEventListener('trix-change', this.props.onChange);
+    this.editor.removeEventListener('trix-initialize', this.props.onChange);
   }
 
   _id = this._generateId()
 
-  componentDidMount() {
-    this._editor = document.getElementById(`editor-${this._id}`)
-    this._editor.addEventListener('trix-initialize', this._handleChange)
-    this._editor.addEventListener('trix-change', this._handleChange)
-  }
-
-  componentWillunmount() {
-    this._editor.removeEventListener('trix-initialize', this._handleChange)
-    this._editor.removeEventListener('trix-change', this._handleChange)
-  }
-
+  // I don't get it, I guess you took it from someone who did ;)
   _generateId() {
     let timestamp = Date.now();
     let uniqueNumber = 0;
 
     (() => {
       // If created at same millisecond as previous
-      if(timestamp <= uniqueNumber) {
-        timestamp = ++uniqueNumber
+      if (timestamp <= uniqueNumber) {
+        timestamp = ++uniqueNumber;
       } else {
-        uniqueNumber = timestamp
+        uniqueNumber = timestamp;
       }
-    })()
-    
-    return 'T' + timestamp
-  }
+    })();
 
-  _handleChange = (e) => {
-    this.props.onChange(e)
+    return 'T' + timestamp;
   }
 
   render() {
-    const { toolbar } = this.props
-    const inputProps = {}
-
-    if(toolbar) inputProps['toolbar'] = toolbar
-
-    return(
+    // http://stackoverflow.com/questions/25553910/one-liner-to-take-some-properties-from-object-in-es6
+    const forwardedProps = ({ toolbar }) => ({ toolbar });
+    return (
       <div>
-        <trix-editor
-          id={`editor-${this._id}`}
-          input={`input-${this._id}`}
-        />
-        <input
-          type="hidden"
-          id={`input-${this._id}`}
-          value={this.props.value}
-          {...inputProps}
-        />
+        <trix-editor id={`editor-${this._id}`} input={`input-${this._id}`}/>
+        <input type="hidden" id={`input-${this._id}`} value={this.props.value} {...forwardedProps(this.props)}/>
       </div>
-    )
+    );
   }
 }
 
-export default TrixEditor
+TrixEditor.propTypes = {
+  onChange: PropTypes.func.isRequired,
+  value: PropTypes.string,
+  toolbar: PropTypes.object
+};
+
+
+export default TrixEditor;
