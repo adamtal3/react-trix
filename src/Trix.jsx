@@ -9,8 +9,8 @@ class TrixEditor extends React.Component {
   // 1. For the first flow we forward trix-change events to this.props.onChange
   componentDidMount() {
     this.editor = document.getElementById(`editor-${this._id}`);
-    this.editor.addEventListener('trix-change', this.trixChanged);
-    this.editor.addEventListener('trix-initialize', this.trixChanged);
+    this.editor.addEventListener('trix-change', this.trixChanged.bind(this));
+    this.editor.addEventListener('trix-initialize', this.trixChanged.bind(this));
   }
 
   trixChanged(nativeEvent) {
