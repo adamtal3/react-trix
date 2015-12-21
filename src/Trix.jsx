@@ -1,16 +1,5 @@
 import React, { PropTypes } from 'react';
 
-// with ExtractTextPlugin (cannot do that in a npm non-root package)
-// but you can put it in the doc
-import 'trix/dist/trix.css';
-
-// They do clever stuff on window.Trix, you can't use export/import loaders as suggested here:
-// https://github.com/basecamp/trix/issues/80
-// Instead we do the dumbest thing possible with webpack, use the script loader.
-// Acceptable since the file is already minified and has no reusable dependencies.
-// npm i script-loader -S
-import 'script!trix/dist/trix.js';
-
 // There are 2 flows possible for updates:
 
 // 1. regular user flow: User types stuff -> this.editor.value + trix-change -> this.props.onChange
@@ -20,8 +9,12 @@ class TrixEditor extends React.Component {
   // 1. For the first flow we forward trix-change events to this.props.onChange
   componentDidMount() {
     this.editor = document.getElementById(`editor-${this._id}`);
-    this.editor.addEventListener('trix-change', this.props.onChange);
-    this.editor.addEventListener('trix-initialize', this.props.onChange);
+    this.editor.addEventListener('trix-change', this.trixChanged);
+    this.editor.addEventListener('trix-initialize', this.trixChanged);
+  }
+
+  trixChanged(nativeEvent) {
+    this.props.onChange(this._value, nativeEvent);
   }
 
   // 2. Value is not read after initialization (See https://github.com/spiffytech/trix/commit/0e19f2cadb5cd0092fe6b16c25919f0c4ae387de)
@@ -68,7 +61,11 @@ class TrixEditor extends React.Component {
     return (
       <div>
         <trix-editor id={`editor-${this._id}`} input={`input-${this._id}`}/>
-        <input type="hidden" id={`input-${this._id}`} value={this.props.value} {...forwardedProps(this.props)}/>
+        <input type="hidden"
+               ref={(el) => this._value = el.value}
+               id={`input-${this._id}`}
+               value={this.props.value}
+               {...forwardedProps(this.props)}/>
       </div>
     );
   }
