@@ -1,24 +1,18 @@
-import React, { Component, PropTypes } from 'react'
+import { Component } from 'react';
 
-class TrixEditor extends React.Component {
-  static propTypes = {
-  }
+export default class TrixEditor extends Component {
 
-  static defaultProps = {
-    onChange: () => null
-  }
-
-  _id = this._generateId()
+  _id = this._generateId();
 
   componentDidMount() {
-    this._editor = document.getElementById(`editor-${this._id}`)
-    this._editor.addEventListener('trix-initialize', this._handleChange)
-    this._editor.addEventListener('trix-change', this._handleChange)
+    this._editor = document.getElementById(`editor-${this._id}`);
+    this._editor.addEventListener('trix-initialize', this._handleChange);
+    this._editor.addEventListener('trix-change', this._handleChange);
   }
 
   componentWillUnmount() {
-    this._editor.removeEventListener('trix-initialize', this._handleChange)
-    this._editor.removeEventListener('trix-change', this._handleChange)
+    this._editor.removeEventListener('trix-initialize', this._handleChange);
+    this._editor.removeEventListener('trix-change', this._handleChange);
   }
 
   _generateId() {
@@ -27,31 +21,34 @@ class TrixEditor extends React.Component {
 
     (() => {
       // If created at same millisecond as previous
-      if(timestamp <= uniqueNumber) {
-        timestamp = ++uniqueNumber
+      if (timestamp <= uniqueNumber) {
+        timestamp = ++uniqueNumber;
       } else {
-        uniqueNumber = timestamp
+        uniqueNumber = timestamp;
       }
-    })()
-    
-    return 'T' + timestamp
+    })();
+
+    return 'T' + timestamp;
   }
 
   _handleChange = (e) => {
-    this.props.onChange(e)
-  }
+    this.props.onChange(e);
+  };
 
   render() {
-    const { toolbar } = this.props
-    const inputProps = {}
+    const { toolbar } = this.props;
+    const inputProps = {};
 
-    if(toolbar) inputProps['toolbar'] = toolbar
+    if (toolbar) {
+      inputProps['toolbar'] = toolbar
+    }
 
-    return(
+    return (
       <div>
         <trix-editor
           id={`editor-${this._id}`}
           input={`input-${this._id}`}
+          style={this.props.style}
         />
         <input
           type="hidden"
@@ -64,4 +61,9 @@ class TrixEditor extends React.Component {
   }
 }
 
-export default TrixEditor
+TrixEditor.propTypes = {
+  onChange: PropTypes.func.isRequired,
+  value: PropTypes.string,
+  toolbar: PropTypes.object,
+  style: PropTypes.string
+};
